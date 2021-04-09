@@ -6,14 +6,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define ABS_MAX			0x3f
-#define ABS_CNT			(ABS_MAX+1)
+#define ABS_MAX 0x3f
+#define ABS_CNT (ABS_MAX + 1)
 
-#define REL_MAX			0x0f
-#define REL_CNT			(REL_MAX+1)
+#define REL_MAX 0x0f
+#define REL_CNT (REL_MAX + 1)
 
-#define KEY_MAX			0x2ff
-#define KEY_CNT			(KEY_MAX+1)
+#define KEY_MAX 0x2ff
+#define KEY_CNT (KEY_MAX + 1)
 
 #if defined(__cplusplus)
 extern "C" {
@@ -26,23 +26,23 @@ typedef enum { JsEventSendReport = 0, JsEventCreateDevice, JsEventRemoveDevice }
 //---------------------------------------------------------------------------
 // Message structure that completely defines a device' configuration
 typedef struct __attribute__((packed)) {
-    char     name[256];     //!< Device "friendly" name
-    uint16_t vid;           //!< USB Device Vendor ID
-    uint16_t pid;           //!< USB Device Product ID
+    char     name[256]; //!< Device "friendly" name
+    uint16_t vid;       //!< USB Device Vendor ID
+    uint16_t pid;       //!< USB Device Product ID
 
-    int32_t absAxisCount;   //!< Number of absolute axis supported on this device
-    int32_t relAxisCount;   //!< Number of relative axis supported on this device
-    int32_t buttonCount;    //!< Number of buttons supported on this device
+    int32_t absAxisCount; //!< Number of absolute axis supported on this device
+    int32_t relAxisCount; //!< Number of relative axis supported on this device
+    int32_t buttonCount;  //!< Number of buttons supported on this device
 
-    uint32_t absAxis[ABS_CNT];              //!< ID for each axis
-    int32_t  absAxisMin[ABS_CNT];           //!< Minimum possible values for axis
-    int32_t  absAxisMax[ABS_CNT];           //!< Maximum possible values for axis
-    int32_t  absAxisFuzz[ABS_CNT];          //!< If Changes are within X counts, ignore
-    int32_t  absAxisFlat[ABS_CNT];          //!< Dead-zone for the axis
-    int32_t  absAxisResolution[ABS_CNT];    //!< Resolution of the axis (unitless)
+    uint32_t absAxis[ABS_CNT];           //!< ID for each axis
+    int32_t  absAxisMin[ABS_CNT];        //!< Minimum possible values for axis
+    int32_t  absAxisMax[ABS_CNT];        //!< Maximum possible values for axis
+    int32_t  absAxisFuzz[ABS_CNT];       //!< If Changes are within X counts, ignore
+    int32_t  absAxisFlat[ABS_CNT];       //!< Dead-zone for the axis
+    int32_t  absAxisResolution[ABS_CNT]; //!< Resolution of the axis (unitless)
 
-    uint32_t relAxis[REL_CNT];     //!< IDs for each relative axis
-    uint32_t buttons[KEY_CNT];     //!< IDs for each key/button supported
+    uint32_t relAxis[REL_CNT]; //!< IDs for each relative axis
+    uint32_t buttons[KEY_CNT]; //!< IDs for each key/button supported
 } js_config_t;
 
 //---------------------------------------------------------------------------
