@@ -34,9 +34,9 @@
 #define NINTENDO_USB_PID ((uint16_t)(0x1337)) // Fake product ID, since the 3ds isn't BT/USB compatbile
 
 #define NINTENDO_3DS_NAME "Nintendo 3DS"
-#define NINTENDO_3DS_NAME_GAMEPAD   (NINTENDO_3DS_NAME " - Gamepad")
-#define NINTENDO_3DS_NAME_MOTION    (NINTENDO_3DS_NAME " - Motion Controls")
-#define NINTENDO_3DS_NAME_TOUCH     (NINTENDO_3DS_NAME " - Touchscreen" )
+#define NINTENDO_3DS_NAME_GAMEPAD (NINTENDO_3DS_NAME " - Gamepad")
+#define NINTENDO_3DS_NAME_MOTION (NINTENDO_3DS_NAME " - Motion Controls")
+#define NINTENDO_3DS_NAME_TOUCH (NINTENDO_3DS_NAME " - Touchscreen")
 
 //---------------------------------------------------------------------------
 // Linux gamepad button IDs -- which is what netstickd is expecting on the
@@ -145,8 +145,8 @@
 #define RAW_REPORT_SIZE                                                                                                \
     ((sizeof(uint8_t) * NDS_BUTTON_COUNT) + (sizeof(int32_t) * NDS_ABS_AXIS_COUNT)                                     \
      + (sizeof(int32_t) * NDS_REL_AXIS_COUNT))
-#define RAW_REPORT_TOUCH_SIZE    (sizeof(uint8_t) + (2 * sizeof(int32_t)))
-#define RAW_REPORT_MOTION_SIZE   (3 * sizeof(int32_t))
+#define RAW_REPORT_TOUCH_SIZE (sizeof(uint8_t) + (2 * sizeof(int32_t)))
+#define RAW_REPORT_MOTION_SIZE (3 * sizeof(int32_t))
 
 //---------------------------------------------------------------------------
 #define MAP_MAX ((size_t)(32))
@@ -208,7 +208,7 @@ static bool encode_and_transmit(int sockFd_, uint16_t messageType_, void* data_,
 
     bool died = false;
 
-    int nWritten = send(sockFd_, raw, toWrite, 0);
+    int nWritten = send(sockFd_, raw, toWrite, MSG_DONTWAIT);
     if (nWritten == -1) {
         printf("socket error: %d\n", errno);
         died = true;
@@ -242,8 +242,8 @@ static void jsproxy_3ds_config_gamepad(js_config_t* config_, js_index_map_t* ind
 
     // Set up the 3DS's absolution-axis identifiers, mapping the supported
     // absolute axis IDs to their corresponding IDs on linux
-    config_->absAxis[NDS_ABS_IDX_X] = LINUX_ABS_X;
-    config_->absAxis[NDS_ABS_IDX_Y] = LINUX_ABS_Y;
+    config_->absAxis[NDS_ABS_IDX_X]  = LINUX_ABS_X;
+    config_->absAxis[NDS_ABS_IDX_Y]  = LINUX_ABS_Y;
     config_->absAxis[NDS_ABS_IDX_RX] = LINUX_ABS_RX;
     config_->absAxis[NDS_ABS_IDX_RY] = LINUX_ABS_RY;
 
@@ -255,20 +255,20 @@ static void jsproxy_3ds_config_gamepad(js_config_t* config_, js_index_map_t* ind
 
     // Set up the mappings between the 3DS's buttons and the corresponding
     // linux IDs.
-    config_->buttons[NDS_IDX_A]            = LINUX_BTN_EAST;
-    config_->buttons[NDS_IDX_B]            = LINUX_BTN_SOUTH;
-    config_->buttons[NDS_IDX_SELECT]       = LINUX_BTN_SELECT;
-    config_->buttons[NDS_IDX_START]        = LINUX_BTN_START;
-    config_->buttons[NDS_IDX_DPAD_RIGHT]   = LINUX_BTN_DPAD_RIGHT;
-    config_->buttons[NDS_IDX_DPAD_LEFT]    = LINUX_BTN_DPAD_LEFT;
-    config_->buttons[NDS_IDX_DPAD_UP]      = LINUX_BTN_DPAD_UP;
-    config_->buttons[NDS_IDX_DPAD_DOWN]    = LINUX_BTN_DPAD_DOWN;
-    config_->buttons[NDS_IDX_R]            = LINUX_BTN_TR;
-    config_->buttons[NDS_IDX_L]            = LINUX_BTN_TL;
-    config_->buttons[NDS_IDX_X]            = LINUX_BTN_NORTH;
-    config_->buttons[NDS_IDX_Y]            = LINUX_BTN_WEST;
-    config_->buttons[NDS_IDX_ZL]           = LINUX_BTN_TL2;
-    config_->buttons[NDS_IDX_ZR]           = LINUX_BTN_TR2;
+    config_->buttons[NDS_IDX_A]          = LINUX_BTN_EAST;
+    config_->buttons[NDS_IDX_B]          = LINUX_BTN_SOUTH;
+    config_->buttons[NDS_IDX_SELECT]     = LINUX_BTN_SELECT;
+    config_->buttons[NDS_IDX_START]      = LINUX_BTN_START;
+    config_->buttons[NDS_IDX_DPAD_RIGHT] = LINUX_BTN_DPAD_RIGHT;
+    config_->buttons[NDS_IDX_DPAD_LEFT]  = LINUX_BTN_DPAD_LEFT;
+    config_->buttons[NDS_IDX_DPAD_UP]    = LINUX_BTN_DPAD_UP;
+    config_->buttons[NDS_IDX_DPAD_DOWN]  = LINUX_BTN_DPAD_DOWN;
+    config_->buttons[NDS_IDX_R]          = LINUX_BTN_TR;
+    config_->buttons[NDS_IDX_L]          = LINUX_BTN_TL;
+    config_->buttons[NDS_IDX_X]          = LINUX_BTN_NORTH;
+    config_->buttons[NDS_IDX_Y]          = LINUX_BTN_WEST;
+    config_->buttons[NDS_IDX_ZL]         = LINUX_BTN_TL2;
+    config_->buttons[NDS_IDX_ZR]         = LINUX_BTN_TR2;
 
     // We're going to use a lookup table to map the 3ds button enums to their indexes in the config object.
     js_index_map_init(indexMap_);
@@ -333,11 +333,10 @@ static void jsproxy_3ds_config_motion(js_config_t* config_)
     config_->absAxis[0] = LINUX_ABS_X;
     config_->absAxis[1] = LINUX_ABS_Y;
     config_->absAxis[2] = LINUX_ABS_Z;
-    
 
     for (int i = 0; i < 3; i++) {
-        config_->absAxisMin[i] = NDS_ACCEL_MIN;
-        config_->absAxisMax[i] = NDS_ACCEL_MAX;
+        config_->absAxisMin[i]  = NDS_ACCEL_MIN;
+        config_->absAxisMax[i]  = NDS_ACCEL_MAX;
         config_->absAxisFuzz[i] = NDS_ACCEL_FUZZ;
     }
 }
@@ -372,8 +371,8 @@ static int jsproxy_3ds_connect(const char* serverAddr_, uint16_t serverPort_)
 }
 
 //---------------------------------------------------------------------------
-static bool
-jsproxy_3ds_gamepad_update(int sockFd_, js_config_t* config_, js_index_map_t* indexMap_, void* reportData_, size_t reportSize_)
+static bool jsproxy_3ds_gamepad_update(
+    int sockFd_, js_config_t* config_, js_index_map_t* indexMap_, void* reportData_, size_t reportSize_)
 {
     js_report_t report = {};
 
@@ -383,36 +382,54 @@ jsproxy_3ds_gamepad_update(int sockFd_, js_config_t* config_, js_index_map_t* in
     report.buttons
         = (uint8_t*)(rawReport + (sizeof(int32_t) * config_->absAxisCount) + (sizeof(int32_t) * config_->relAxisCount));
 
-    circlePosition circle;
-    circlePosition cstick;
-    
-    hidCircleRead(&circle);
-    hidCstickRead(&cstick);
-    
+    static uint32_t       lastKeys   = 0;
+    static circlePosition lastCircle = {};
+    static circlePosition lastCstick = {};
+
     uint32_t keys = hidKeysHeld();
 
-    for (int bit = 0; bit < 32; bit++) {
-        int idx = js_index_map_get_index(indexMap_, EV_KEY, bit);
-        if (idx != -1) {
-            int val = 0;
-            if (keys & (1 << bit)) {
-                val = 1;
-            }
-            report.buttons[idx] = val;
-        }
+    circlePosition circle;
+    circlePosition cstick;
+
+    bool doUpdate = true;
+
+    hidCircleRead(&circle);
+    hidCstickRead(&cstick);
+
+    if ((circle.dx == lastCircle.dx) && (circle.dy == lastCircle.dy) && (cstick.dx == lastCstick.dx)
+        && (cstick.dy == lastCstick.dy) && (keys == lastKeys)) {
+        doUpdate = false;
     }
 
-    report.absAxis[0] = circle.dx;
-    report.absAxis[1] = circle.dy;
-    report.absAxis[2] = cstick.dx;
-    report.absAxis[3] = cstick.dy;
+    lastCircle = circle;
+    lastCstick = cstick;
+    lastKeys   = keys;
 
-    return encode_and_transmit(sockFd_, 1, rawReport, reportSize_);
+    if (doUpdate) {
+        for (int bit = 0; bit < 32; bit++) {
+            int idx = js_index_map_get_index(indexMap_, EV_KEY, bit);
+            if (idx != -1) {
+                int val = 0;
+                if (keys & (1 << bit)) {
+                    val = 1;
+                }
+                report.buttons[idx] = val;
+            }
+        }
+
+        report.absAxis[0] = circle.dx;
+        report.absAxis[1] = circle.dy;
+        report.absAxis[2] = cstick.dx;
+        report.absAxis[3] = cstick.dy;
+
+        return encode_and_transmit(sockFd_, 1, rawReport, reportSize_);
+    }
+    return true;
 }
 
 //---------------------------------------------------------------------------
-static bool
-jsproxy_3ds_motion_update(int sockFd_, js_config_t* config_, void* reportData_, size_t reportSize_) {
+static bool jsproxy_3ds_motion_update(int sockFd_, js_config_t* config_, void* reportData_, size_t reportSize_)
+{
     js_report_t report = {};
 
     uint8_t* rawReport = reportData_;
@@ -432,8 +449,8 @@ jsproxy_3ds_motion_update(int sockFd_, js_config_t* config_, void* reportData_, 
 }
 
 //---------------------------------------------------------------------------
-static bool
-jsproxy_3ds_touch_update(int sockFd_, js_config_t* config_, void* reportData_, size_t reportSize_) {
+static bool jsproxy_3ds_touch_update(int sockFd_, js_config_t* config_, void* reportData_, size_t reportSize_)
+{
     js_report_t report = {};
 
     uint8_t* rawReport = reportData_;
@@ -442,26 +459,39 @@ jsproxy_3ds_touch_update(int sockFd_, js_config_t* config_, void* reportData_, s
     report.buttons
         = (uint8_t*)(rawReport + (sizeof(int32_t) * config_->absAxisCount) + (sizeof(int32_t) * config_->relAxisCount));
 
-    static int32_t lastX = 0;
-    static int32_t lastY = 0;
-    
-    uint32_t keys = hidKeysHeld();
+    bool doUpdate = true;
+
+    static int32_t  lastX    = 0;
+    static int32_t  lastY    = 0;
+    static uint32_t lastKeys = 0;
+
+    uint32_t      keys = hidKeysHeld();
     touchPosition touch;
     hidTouchRead(&touch);
-     
-    if (keys & (1 << NDS_KEY_TOUCH)) {    
+
+    // Only send an update if there's a change in the data...
+    if ((keys == lastKeys) && (touch.px == lastX) && (touch.py == lastY)) {
+        doUpdate = false;
+    }
+
+    if (keys & (1 << NDS_KEY_TOUCH)) {
         report.absAxis[0] = touch.px;
         report.absAxis[1] = touch.py;
         report.buttons[0] = 1;
-        lastX = touch.px;
-        lastY = touch.py;
+        lastX             = touch.px;
+        lastY             = touch.py;
     } else {
         report.absAxis[0] = lastX;
         report.absAxis[1] = lastY;
-        report.buttons[0] = 0; 
+        report.buttons[0] = 0;
     }
-    
-    return encode_and_transmit(sockFd_, 1, rawReport, reportSize_);
+
+    lastKeys = keys;
+
+    if (doUpdate) {
+        return encode_and_transmit(sockFd_, 1, rawReport, reportSize_);
+    }
+    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -562,16 +592,17 @@ static bool jsproxy_read_config(const char* path_, host_config_t* config_)
 
 //---------------------------------------------------------------------------
 // Create objects for configuration data used in the program
-static host_config_t  hostConfig = {};
+static host_config_t hostConfig = {};
 
 //---------------------------------------------------------------------------
-static void handle_gamepad() {
-    static js_index_map_t indexMap   = {};
-    static js_config_t    config     = {};
-    static bool isInit = false;
-    static uint8_t rawReport[RAW_REPORT_SIZE];
-    static int sockFd = -1;
-    
+static void handle_gamepad()
+{
+    static js_index_map_t indexMap = {};
+    static js_config_t    config   = {};
+    static bool           isInit   = false;
+    static uint8_t        rawReport[RAW_REPORT_SIZE];
+    static int            sockFd = -1;
+
     if (!isInit) {
         jsproxy_3ds_config_gamepad(&config, &indexMap);
         isInit = true;
@@ -599,12 +630,13 @@ static void handle_gamepad() {
 }
 
 //---------------------------------------------------------------------------
-static void handle_touch() {
-    static uint8_t rawReport[RAW_REPORT_TOUCH_SIZE];
-    static js_config_t config     = {};
-    static int sockFd = -1;
-    static bool isInit = false;
-    
+static void handle_touch()
+{
+    static uint8_t     rawReport[RAW_REPORT_TOUCH_SIZE];
+    static js_config_t config = {};
+    static int         sockFd = -1;
+    static bool        isInit = false;
+
     if (!isInit) {
         jsproxy_3ds_config_touch(&config);
         isInit = true;
@@ -623,7 +655,7 @@ static void handle_touch() {
             }
         }
     } else {
-       if (!jsproxy_3ds_touch_update(sockFd, &config, rawReport, RAW_REPORT_TOUCH_SIZE)) {
+        if (!jsproxy_3ds_touch_update(sockFd, &config, rawReport, RAW_REPORT_TOUCH_SIZE)) {
             close(sockFd);
             sockFd = -1;
             printf("disconnected -- touch!\n");
@@ -632,12 +664,13 @@ static void handle_touch() {
 }
 
 //---------------------------------------------------------------------------
-static void handle_accel() {
-    static uint8_t rawReport[RAW_REPORT_MOTION_SIZE];
-    static js_config_t config     = {};
-    static int sockFd = -1;
-    static bool isInit = false;
-    
+static void handle_accel()
+{
+    static uint8_t     rawReport[RAW_REPORT_MOTION_SIZE];
+    static js_config_t config = {};
+    static int         sockFd = -1;
+    static bool        isInit = false;
+
     if (!isInit) {
         jsproxy_3ds_config_motion(&config);
         isInit = true;
@@ -656,7 +689,7 @@ static void handle_accel() {
             }
         }
     } else {
-       if (!jsproxy_3ds_motion_update(sockFd, &config, rawReport, RAW_REPORT_MOTION_SIZE)) {
+        if (!jsproxy_3ds_motion_update(sockFd, &config, rawReport, RAW_REPORT_MOTION_SIZE)) {
             close(sockFd);
             sockFd = -1;
             printf("disconnected -- motion!\n");
@@ -665,8 +698,9 @@ static void handle_accel() {
 }
 
 //---------------------------------------------------------------------------
-static bool init_config() {
-   // Read config file on device
+static bool init_config()
+{
+    // Read config file on device
     if (!jsproxy_read_config("config.txt", &hostConfig)) {
         printf("Please create a file named config.txt in the \n"
                "app's directory, with lines containing \n"
@@ -707,23 +741,23 @@ int main(void)
         gfxExit();
         return 0;
     }
-    
+
     // allocate buffer for SOC service
     uint32_t* socBuffer = (uint32_t*)memalign(SOC_ALIGN, SOC_BUFFERSIZE);
     socInit(socBuffer, SOC_BUFFERSIZE);
 
-    // Enable the accel 
+    // Enable the accel
     HIDUSER_EnableAccelerometer();
-    
+
     while (aptMainLoop()) {
         gspWaitForVBlank();
-        
+
         hidScanInput();
 
         handle_gamepad();
         handle_touch();
         handle_accel();
-        
+
         gfxFlushBuffers();
         gfxSwapBuffers();
     }
