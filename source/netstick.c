@@ -754,9 +754,19 @@ int main(void)
 
         hidScanInput();
 
-        handle_gamepad();
         handle_touch();
         handle_accel();
+
+        // Poll input multiple times per vblank in order to reduce latency
+        // Don't think the touchscreen/accel latency is as big a concern...
+        for (int i = 0; i < 3; i++) {
+            handle_gamepad();
+
+            if (i != 2) {
+                svcSleepThread(1000000000ULL / 180ULL);
+                hidScanInput();
+            }
+        }
 
         gfxFlushBuffers();
         gfxSwapBuffers();
