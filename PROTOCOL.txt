@@ -1,0 +1,92 @@
+Netstick Network Protocol:
+
+The Netstick protocol can be described as a stream of framed messages.  Messages consist of a tag/length/value (TLV) structure with an additional checksum checksum, each message supporting a variable-length payload (value).
+
+The details off the framing, message formatting, and message structures is presented below.
+
+1.  Stream Framing
+
+(see slip.c/.h in the netstick source)
+
+All messages sent from the client to the server are framed using SLIP (serial-line internet protocol) before transmission.  SLIP is suitable for sending framed message across a lossy channel while providing message synchronization and error detection.  While it's overkill for TCP (error correction and retransmission negate the need for SLIP's framing), it would enable us to consider sending data over a UDP socket without requiring any further synchronization and error detection.
+
+On the server, data should be read from a client's socket and processed byte-at-a-time until a complete and intact SLIP frame is detected.
+
+The complete slip frame is then decoded into a Netstick Message.
+
+2.  Message Format
+
+(see tlvc.c/.h in the netstick source)
+
+Netstick messages consist of 4 fields, in the following format:
+
+[ Tag (2) | Length (2) | Value (n) | Checksum (2) ]
+
+a)  Tag (16-bit unsigned integer)
+- The "Tag" is the protocol message ID.  The different message types and their corresponding payloads are discussed later.
+
+b)  Length (16-bit unsigned integer)
+- The Length of the messages "Value" field (in bytes).  This can be compared against the raw message size to ensure that the payload we receive is indeed the expected size
+
+c)  Value (variable length)
+- This is the tag-specific message payload.  Each tag will have its own structure, which will be discussed 
+
+d)  Checksum
+- A 2-byte arithmatic sum of the tag/length/value.  This is used to ensure that there were no bit errors in the message as received over the wire.
+
+3.  Message Types and Payloads
+
+a) Message Type 0: Configuration
+
+(message defined in joystick.h)
+
+Upon successfully connecting to the server, the client will immediately send a configuration message - the contents of which define what buttons and axis are supported by the device.
+
+The structure is a fixed-size, and large enough to fully-describe any type of input device supported by a Linux host.  
+
+The configuration message is sent from client to server using a serialized C-struct defined below: 
+
+typedef struct __attribute__((packed)) {
+	char 		name[256];	//!< Friendly name of the device, i.e. "iBuffalo USB Controller"
+	uint16_t	vid;		//!< USB/Bluetooth Vendor ID for the device
+	uint16_t	pid;		//!< USB/Bluetooth Product ID for the device
+	
+	int32_t absAxisCount;	//!< Number of "absolute" axes supported by the device
+	int32_t relAxisCount;	//!< Number of "relative" axes supported by the device
+	int32_t	buttonCount;	//!< Number of buttons supported by the device
+	
+	uint32_t absAxis[ABS_CNT];		//!< List of absolute axis IDs (as defined in the the Linux input device subsystem) to be registered on device creation
+	int32_t absAxisMin[ABS_CNT];	//!< Minimum value reported for each registered axis
+	int32_t absAxisMax[ABS_CNT];	//!< Maximum value reported for each registered axis
+	int32_t absAxisFuzz[ABS_CNT];	//!< Linux 'Fuzz' factor
+	int32_t absAxisFlat[ABS_CNT];	//!< Deadzone 
+	int32_t absAxisResolution[ABS_CNT];		//!< Resolution of the device 
+	
+	uint32_t relAxis[REL_CNT];		//!< List of relative Axis IDs (as defined in the Linux input device subsystem) to be registered on device creation
+	uint32_t buttons[KEY_CNT];		//!< List of button IDs (as defined in the Linux input device subsystem) to be registered on device creation
+} js_config_t;
+
+Where ABS_CNT, REL_CNT and KEY_CNT are defined as per the linux input subsystem's headers (linux-event-codes.h)
+
+Upon receipt of a valid structure, the server will register a device with the supplied configuration in the Linux input subsystem.
+
+b) Message Type 1: HID Report
+
+The size and contents of the HID report depends on how the device was configured, but is broken down into the 3 following sections.
+
+- absolute axis data
+- relative axis data
+- button data
+
+Each element in the absolute and relative axis fields represents the currently-reported values for each axis represented as signed, 32-bit integers, and there is one element in the report for each axis defined in the configuration message.
+
+The button data consists of a uint8_t for each key registered per the configuration message, where a value of 1 corresponds to "button pressed" and a value of 0 corresponds to "button released".  ** I plan on packing this data with a 1-bit-per-key encoding scheme in the future.
+
+For each axis or button, the order of the data sent corresponds to the order in which they were registered in the configuration structure.  
+
+As an example, if absAxisCount = 2, absAxis[0] = ABS_X ,and bsAxis[1] = ABS_Y in the configuration structure, then the first elements in the report structure will be the raw X/Y reported by the device.  
+
+Similary, if buttonCount = 8, absAxis[0] = BTN_GAMEPAD_UP, absAxis[7] = BTN_GAMEPAD_START, then the first button value reported in the HID report is the gamepad's "up" button state, followed by the other button values, then finally the state of the "start" button.
+
+If no axes of a certain type or buttons are defined, then zero bytes of data are sent for those sections.
+
