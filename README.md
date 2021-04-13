@@ -9,10 +9,9 @@ Netstick turns your 3DS into a wifi enabled gamepad!  Control any linux-based de
 ## What's supported?
 
 - The dpad, circle-pad, c-stick (new 3ds), and all buttons are all mapped
-
-## What's not?
-
-- Accelerometer, IMU, and touchscreen events are not yet mapped
+- Accelerometer (X/Y/Z)
+- Gyroscope (X/Y/Z)
+- Touchscreen
 
 ## Preparation
 
@@ -38,8 +37,23 @@ and events routed to a device named "Nintendo 3DS" appear under /dev/input.  Use
 Netstick for 3DS is built using devkitpro (https://devkitpro.org).  Once it has been properly installed and configured, Netstick can be built by typing `make`
 from the root of this source package.
 
+## Configuration
+
+The configuration file format is very simple, and consists of lines in key:value format.
+
+The supported options are described below:
+
+`server` - The IP address of the server on the local network
+`port` - The port of the server on the local network
+`invert_cstick_x` - Invert the values reported natively by the 3DS on the C-stick's X axis (Ignored on Old 3DS)
+`invert_cstick_y` - Invert the values reported natively by the 3DS on the C-stick's Y axis (Ignored on Old 3DS)
+`invert_circle_pad_x` - Invert the values reported natively by the 3DS on the Circle Pad's X axis
+`invert_circle_pad_y` - Invert the values reported natively by the 3DS on the Circle Pad's Y axis
+`use_touch` - Enable the touchscreen device when set to 'true'
+`use_accel` - Enable the accelerometer when set to 'true'
+`use_gyro` - Enable the gyroscope when set to 'true'
+`send_touch_event` - send a linux "touch" event (in addition to the X/Y coordinates) when the touchscreen is active 
+
 ## ToDo's:
 
-- Documentation and code cleanup
-- Accelerometer/IMU events
-- Touchscreen events
+- Improved documentation / code cleanup
