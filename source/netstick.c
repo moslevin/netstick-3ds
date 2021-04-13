@@ -35,7 +35,8 @@
 
 #define NINTENDO_3DS_NAME "Nintendo 3DS"
 #define NINTENDO_3DS_NAME_GAMEPAD (NINTENDO_3DS_NAME " - Gamepad")
-#define NINTENDO_3DS_NAME_MOTION (NINTENDO_3DS_NAME " - Motion Controls")
+#define NINTENDO_3DS_NAME_MOTION (NINTENDO_3DS_NAME " - Accelerometer")
+#define NINTENDO_3DS_NAME_GYRO (NINTENDO_3DS_NAME " - Gyroscope")
 #define NINTENDO_3DS_NAME_TOUCH (NINTENDO_3DS_NAME " - Touchscreen")
 
 //---------------------------------------------------------------------------
@@ -112,6 +113,12 @@
 #define NDS_ACCEL_FUZZ 16
 
 //---------------------------------------------------------------------------
+// Max/Min values for gyro reports
+#define NDS_GYRO_MIN -12000
+#define NDS_GYRO_MAX 12000
+#define NDS_GYRO_FUZZ 5
+
+//---------------------------------------------------------------------------
 // Indexes of the 3DS buttons in the report structure -- for the gamepad
 #define NDS_IDX_A 0
 #define NDS_IDX_B 1
@@ -147,6 +154,7 @@
      + (sizeof(int32_t) * NDS_REL_AXIS_COUNT))
 #define RAW_REPORT_TOUCH_SIZE (sizeof(uint8_t) + (2 * sizeof(int32_t)))
 #define RAW_REPORT_MOTION_SIZE (3 * sizeof(int32_t))
+#define RAW_REPORT_GYRO_SIZE (3 * sizeof(int32_t))
 
 //---------------------------------------------------------------------------
 #define MAP_MAX ((size_t)(32))
@@ -154,6 +162,202 @@
 #define EV_KEY ((size_t)(1))
 #define EV_REL ((size_t)(2))
 #define EV_ABS ((size_t)(3))
+
+//---------------------------------------------------------------------------
+typedef struct {
+    char host[64];
+    bool hostFound;
+    int  port;
+    bool portFound;
+    bool invertCStickX;
+    bool invertCStickY;
+    bool invertCirclePadX;
+    bool invertCirclePadY;
+    bool useTouch;
+    bool sendTouchEvent;
+    bool useAccel;
+    bool useGyro;
+} program_options_t;
+
+//---------------------------------------------------------------------------
+// Create objects for configuration data used in the program
+static program_options_t programOptions = {
+    .invertCStickX    = false,
+    .invertCStickY    = false,
+    .invertCirclePadX = false,
+    .invertCirclePadY = false,
+    .useTouch         = true,
+    .sendTouchEvent   = true,
+    .useAccel         = true,
+    .useGyro          = true,
+};
+
+//---------------------------------------------------------------------------
+static void jsproxy_parse_config_line(const char* line_, program_options_t* config_)
+{
+    char key[64]   = {};
+    char value[64] = {};
+
+    char* matchIdx = strstr(line_, ":");
+
+    if (!matchIdx) {
+        return;
+    }
+
+    *matchIdx = ' ';
+
+    sscanf(line_, "%64s %64s", key, value);
+
+    if (0 == strcmp(key, "server")) {
+        strcpy(config_->host, value);
+        config_->hostFound = true;
+    } else if (0 == strcmp(key, "port")) {
+        config_->port      = atoi(value);
+        config_->portFound = true;
+    } else if (0 == strcmp(key, "invert_cstick_x")) {
+        if (0 == strcmp(value, "true")) {
+            config_->invertCStickX = true;
+        } else {
+            config_->invertCStickX = false;
+        }
+    } else if (0 == strcmp(key, "invert_cstick_y")) {
+        if (0 == strcmp(value, "true")) {
+            config_->invertCStickY = true;
+        } else {
+            config_->invertCStickY = false;
+        }
+    } else if (0 == strcmp(key, "invert_circle_pad_x")) {
+        if (0 == strcmp(value, "true")) {
+            config_->invertCirclePadX = true;
+        } else {
+            config_->invertCirclePadX = false;
+        }
+    } else if (0 == strcmp(key, "invert_circle_pad_y")) {
+        if (0 == strcmp(value, "true")) {
+            config_->invertCirclePadY = true;
+        } else {
+            config_->invertCirclePadY = false;
+        }
+    } else if (0 == strcmp(key, "use_touch")) {
+        if (0 == strcmp(value, "true")) {
+            config_->useTouch = true;
+        } else {
+            config_->useTouch = false;
+        }
+    } else if (0 == strcmp(key, "send_touch_event")) {
+        if (0 == strcmp(value, "true")) {
+            config_->sendTouchEvent = true;
+        } else {
+            config_->sendTouchEvent = false;
+        }
+    } else if (0 == strcmp(key, "use_accel")) {
+        if (0 == strcmp(value, "true")) {
+            config_->useAccel = true;
+        } else {
+            config_->useAccel = false;
+        }
+    } else if (0 == strcmp(key, "use_gyro")) {
+        if (0 == strcmp(value, "true")) {
+            config_->useGyro = true;
+        } else {
+            config_->useGyro = false;
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
+static bool jsproxy_read_config(const char* path_, program_options_t* config_)
+{
+    // Open file and read contents into a buffer...
+    FILE* configFile = fopen(path_, "r");
+
+    if (configFile == NULL) {
+        printf("Error opening %s\n", path_);
+        return false;
+    }
+
+    fseek(configFile, 0, SEEK_END);
+
+    int fileSize = ftell(configFile);
+
+    fseek(configFile, 0, SEEK_SET);
+
+    char* fileBuffer = (char*)malloc(fileSize);
+    if (!fileBuffer) {
+        printf("Error allocating %d bytes\n", fileSize);
+        fclose(configFile);
+        return false;
+    }
+
+    int nRead = fread(fileBuffer, 1, fileSize, configFile);
+    fclose(configFile);
+
+    if (nRead != fileSize) {
+        printf("Could not read entire file (got %d, expected %d)\n", nRead, fileSize);
+        free(fileBuffer);
+        return false;
+    }
+
+    // Destructively parse through the read configuration file and read-out key/value pairs.
+    char* lineStart = fileBuffer;
+    char* curr      = lineStart;
+    while (*curr) {
+        if (*curr == '\n') {
+            *curr = '\0';
+            jsproxy_parse_config_line(lineStart, config_);
+            lineStart = ++curr;
+        } else if (*curr == '#') {
+            *curr = '\0';
+            jsproxy_parse_config_line(lineStart, config_);
+
+            // Silently consume the rest of the line
+            curr++;
+            while (*curr && (*curr != '\n')) { curr++; }
+            lineStart = curr;
+        } else {
+            curr++;
+        }
+    }
+    jsproxy_parse_config_line(lineStart, config_);
+    free(fileBuffer);
+
+    if (config_->hostFound && config_->portFound) {
+        return true;
+    }
+
+    return false;
+}
+
+//---------------------------------------------------------------------------
+static bool init_config()
+{
+    // Read config file on device
+    if (!jsproxy_read_config("config.txt", &programOptions)) {
+        printf("Please create a file named config.txt in the \n"
+               "app's directory, with lines containing \n"
+               "the server's IP and port, as below:\n\n"
+               "server:192.168.1.1\n"
+               "port:1234\n\n"
+               "\n"
+               "Press any key to exit...\n");
+
+        // Fail loop to run if we couldn't read the config file.
+        while (aptMainLoop()) {
+            gspWaitForVBlank();
+            hidScanInput();
+
+            uint32_t keys = hidKeysDown();
+            if (keys) {
+                break;
+            }
+
+            gfxFlushBuffers();
+            gfxSwapBuffers();
+        }
+        return false;
+    }
+    return true;
+}
 
 //---------------------------------------------------------------------------
 typedef struct {
@@ -231,7 +435,7 @@ static bool encode_and_transmit(int sockFd_, uint16_t messageType_, void* data_,
 static void jsproxy_3ds_config_gamepad(js_config_t* config_, js_index_map_t* indexMap_)
 {
     // Set the device identifiers for the 3DS
-    config_->pid = 0x1337; // Dummy value
+    config_->pid = NINTENDO_USB_PID; // Dummy value
     config_->vid = NINTENDO_USB_VID;
     strcpy(config_->name, NINTENDO_3DS_NAME_GAMEPAD);
 
@@ -293,13 +497,17 @@ static void jsproxy_3ds_config_gamepad(js_config_t* config_, js_index_map_t* ind
 static void jsproxy_3ds_config_touch(js_config_t* config_)
 {
     // Set the device identifiers for the 3DS
-    config_->pid = 0x1337; // Dummy value
+    config_->pid = NINTENDO_USB_PID + 1; // Dummy value
     config_->vid = NINTENDO_USB_VID;
     strcpy(config_->name, NINTENDO_3DS_NAME_TOUCH);
 
     // Set the count of buttons/axis supported by the 3DS
     config_->absAxisCount = 2;
-    config_->buttonCount  = 1;
+
+    // Set up a single button to handle touch events
+    config_->buttonCount = 1;
+    config_->buttons[0]  = LINUX_BTN_TOUCH;
+
     config_->relAxisCount = 0;
 
     // Set up the 3DS's touchscreen parameters
@@ -311,16 +519,13 @@ static void jsproxy_3ds_config_touch(js_config_t* config_)
 
     config_->absAxisMin[1] = 0;
     config_->absAxisMax[1] = 240;
-
-    // Set up a single button to handle touch events
-    config_->buttons[0] = LINUX_BTN_TOUCH;
 }
 
 //---------------------------------------------------------------------------
 static void jsproxy_3ds_config_motion(js_config_t* config_)
 {
     // Set the device identifiers for the 3DS
-    config_->pid = 0x1337; // Dummy value
+    config_->pid = NINTENDO_USB_PID + 2; // Dummy value
     config_->vid = NINTENDO_USB_VID;
     strcpy(config_->name, NINTENDO_3DS_NAME_MOTION);
 
@@ -338,6 +543,31 @@ static void jsproxy_3ds_config_motion(js_config_t* config_)
         config_->absAxisMin[i]  = NDS_ACCEL_MIN;
         config_->absAxisMax[i]  = NDS_ACCEL_MAX;
         config_->absAxisFuzz[i] = NDS_ACCEL_FUZZ;
+    }
+}
+
+//---------------------------------------------------------------------------
+static void jsproxy_3ds_config_gyro(js_config_t* config_)
+{
+    // Set the device identifiers for the 3DS
+    config_->pid = NINTENDO_USB_PID + 3; // Dummy value
+    config_->vid = NINTENDO_USB_VID;
+    strcpy(config_->name, NINTENDO_3DS_NAME_GYRO);
+
+    config_->absAxisCount = 3;
+    config_->buttonCount  = 0;
+    config_->relAxisCount = 0;
+
+    // Set up the 3DS's absolution-axis identifiers, mapping the supported
+    // absolute axis IDs to their corresponding IDs on linux
+    config_->absAxis[0] = LINUX_ABS_X;
+    config_->absAxis[1] = LINUX_ABS_Y;
+    config_->absAxis[2] = LINUX_ABS_Z;
+
+    for (int i = 0; i < 3; i++) {
+        config_->absAxisMin[i]  = NDS_GYRO_MIN;
+        config_->absAxisMax[i]  = NDS_GYRO_MAX;
+        config_->absAxisFuzz[i] = NDS_GYRO_FUZZ;
     }
 }
 
@@ -396,6 +626,19 @@ static bool jsproxy_3ds_gamepad_update(
     hidCircleRead(&circle);
     hidCstickRead(&cstick);
 
+    if (programOptions.invertCirclePadX) {
+        circle.dx *= -1;
+    }
+    if (programOptions.invertCirclePadY) {
+        circle.dy *= -1;
+    }
+    if (programOptions.invertCStickX) {
+        cstick.dx *= -1;
+    }
+    if (programOptions.invertCStickY) {
+        cstick.dy *= -1;
+    }
+
     if ((circle.dx == lastCircle.dx) && (circle.dy == lastCircle.dy) && (cstick.dx == lastCstick.dx)
         && (cstick.dy == lastCstick.dy) && (keys == lastKeys)) {
         doUpdate = false;
@@ -449,6 +692,27 @@ static bool jsproxy_3ds_motion_update(int sockFd_, js_config_t* config_, void* r
 }
 
 //---------------------------------------------------------------------------
+static bool jsproxy_3ds_gyro_update(int sockFd_, js_config_t* config_, void* reportData_, size_t reportSize_)
+{
+    js_report_t report = {};
+
+    uint8_t* rawReport = reportData_;
+    report.absAxis     = (int32_t*)rawReport;
+    report.relAxis     = (int32_t*)(rawReport + (sizeof(int32_t) * config_->absAxisCount));
+    report.buttons
+        = (uint8_t*)(rawReport + (sizeof(int32_t) * config_->absAxisCount) + (sizeof(int32_t) * config_->relAxisCount));
+
+    angularRate gyro;
+    hidGyroRead(&gyro);
+
+    report.absAxis[0] = gyro.x;
+    report.absAxis[1] = gyro.y;
+    report.absAxis[2] = gyro.z;
+
+    return encode_and_transmit(sockFd_, 1, rawReport, reportSize_);
+}
+
+//---------------------------------------------------------------------------
 static bool jsproxy_3ds_touch_update(int sockFd_, js_config_t* config_, void* reportData_, size_t reportSize_)
 {
     js_report_t report = {};
@@ -477,13 +741,20 @@ static bool jsproxy_3ds_touch_update(int sockFd_, js_config_t* config_, void* re
     if (keys & (1 << NDS_KEY_TOUCH)) {
         report.absAxis[0] = touch.px;
         report.absAxis[1] = touch.py;
-        report.buttons[0] = 1;
-        lastX             = touch.px;
-        lastY             = touch.py;
+
+        lastX = touch.px;
+        lastY = touch.py;
+
+        if (programOptions.sendTouchEvent == true) {
+            report.buttons[0] = 1;
+        }
     } else {
         report.absAxis[0] = lastX;
         report.absAxis[1] = lastY;
-        report.buttons[0] = 0;
+
+        if (programOptions.sendTouchEvent == true) {
+            report.buttons[0] = 0;
+        }
     }
 
     lastKeys = keys;
@@ -493,106 +764,6 @@ static bool jsproxy_3ds_touch_update(int sockFd_, js_config_t* config_, void* re
     }
     return true;
 }
-
-//---------------------------------------------------------------------------
-typedef struct {
-    char host[64];
-    bool hostFound;
-    int  port;
-    bool portFound;
-} host_config_t;
-
-//---------------------------------------------------------------------------
-static void jsproxy_parse_config_line(const char* line_, host_config_t* config_)
-{
-    char key[64]   = {};
-    char value[64] = {};
-
-    char* matchIdx = strstr(line_, ":");
-
-    if (!matchIdx) {
-        return;
-    }
-
-    *matchIdx = ' ';
-
-    sscanf(line_, "%64s %64s", key, value);
-
-    if (0 == strcmp(key, "server")) {
-        strcpy(config_->host, value);
-        config_->hostFound = true;
-    } else if (0 == strcmp(key, "port")) {
-        config_->port      = atoi(value);
-        config_->portFound = true;
-    }
-}
-
-//---------------------------------------------------------------------------
-static bool jsproxy_read_config(const char* path_, host_config_t* config_)
-{
-    // Open file and read contents into a buffer...
-    FILE* configFile = fopen(path_, "r");
-
-    if (configFile == NULL) {
-        printf("Error opening %s\n", path_);
-        return false;
-    }
-
-    fseek(configFile, 0, SEEK_END);
-
-    int fileSize = ftell(configFile);
-
-    fseek(configFile, 0, SEEK_SET);
-
-    char* fileBuffer = (char*)malloc(fileSize);
-    if (!fileBuffer) {
-        printf("Error allocating %d bytes\n", fileSize);
-        fclose(configFile);
-        return false;
-    }
-
-    int nRead = fread(fileBuffer, 1, fileSize, configFile);
-    fclose(configFile);
-
-    if (nRead != fileSize) {
-        printf("Could not read entire file (got %d, expected %d)\n", nRead, fileSize);
-        free(fileBuffer);
-        return false;
-    }
-
-    // Destructively parse through the read configuration file and read-out key/value pairs.
-    char* lineStart = fileBuffer;
-    char* curr      = lineStart;
-    while (*curr) {
-        if (*curr == '\n') {
-            *curr = '\0';
-            jsproxy_parse_config_line(lineStart, config_);
-            lineStart = ++curr;
-        } else if (*curr == '#') {
-            *curr = '\0';
-            jsproxy_parse_config_line(lineStart, config_);
-
-            // Silently consume the rest of the line
-            curr++;
-            while (*curr && (*curr != '\n')) { curr++; }
-            lineStart = curr;
-        } else {
-            curr++;
-        }
-    }
-    jsproxy_parse_config_line(lineStart, config_);
-    free(fileBuffer);
-
-    if (config_->hostFound && config_->portFound) {
-        return true;
-    }
-
-    return false;
-}
-
-//---------------------------------------------------------------------------
-// Create objects for configuration data used in the program
-static host_config_t hostConfig = {};
 
 //---------------------------------------------------------------------------
 static void handle_gamepad()
@@ -609,7 +780,7 @@ static void handle_gamepad()
     }
 
     if (sockFd == -1) {
-        sockFd = jsproxy_3ds_connect(hostConfig.host, hostConfig.port);
+        sockFd = jsproxy_3ds_connect(programOptions.host, programOptions.port);
 
         // Connection succeeded -- try to send configuration data.
         if (sockFd >= 0) {
@@ -632,6 +803,10 @@ static void handle_gamepad()
 //---------------------------------------------------------------------------
 static void handle_touch()
 {
+    if (programOptions.useTouch == false) {
+        return;
+    }
+
     static uint8_t     rawReport[RAW_REPORT_TOUCH_SIZE];
     static js_config_t config = {};
     static int         sockFd = -1;
@@ -643,7 +818,7 @@ static void handle_touch()
     }
 
     if (sockFd == -1) {
-        sockFd = jsproxy_3ds_connect(hostConfig.host, hostConfig.port);
+        sockFd = jsproxy_3ds_connect(programOptions.host, programOptions.port);
 
         // Connection succeeded -- try to send configuration data.
         if (sockFd >= 0) {
@@ -666,6 +841,10 @@ static void handle_touch()
 //---------------------------------------------------------------------------
 static void handle_accel()
 {
+    if (programOptions.useAccel == false) {
+        return;
+    }
+
     static uint8_t     rawReport[RAW_REPORT_MOTION_SIZE];
     static js_config_t config = {};
     static int         sockFd = -1;
@@ -677,7 +856,7 @@ static void handle_accel()
     }
 
     if (sockFd == -1) {
-        sockFd = jsproxy_3ds_connect(hostConfig.host, hostConfig.port);
+        sockFd = jsproxy_3ds_connect(programOptions.host, programOptions.port);
 
         // Connection succeeded -- try to send configuration data.
         if (sockFd >= 0) {
@@ -698,34 +877,41 @@ static void handle_accel()
 }
 
 //---------------------------------------------------------------------------
-static bool init_config()
+static void handle_gyro()
 {
-    // Read config file on device
-    if (!jsproxy_read_config("config.txt", &hostConfig)) {
-        printf("Please create a file named config.txt in the \n"
-               "app's directory, with lines containing \n"
-               "the server's IP and port, as below:\n\n"
-               "server:192.168.1.1\n"
-               "port:1234\n\n"
-               "\n"
-               "Press any key to exit...\n");
-
-        // Fail loop to run if we couldn't read the config file.
-        while (aptMainLoop()) {
-            gspWaitForVBlank();
-            hidScanInput();
-
-            uint32_t keys = hidKeysDown();
-            if (keys) {
-                break;
-            }
-
-            gfxFlushBuffers();
-            gfxSwapBuffers();
-        }
-        return false;
+    if (programOptions.useGyro == false) {
+        return;
     }
-    return true;
+
+    static uint8_t     rawReport[RAW_REPORT_GYRO_SIZE];
+    static js_config_t config = {};
+    static int         sockFd = -1;
+    static bool        isInit = false;
+
+    if (!isInit) {
+        jsproxy_3ds_config_gyro(&config);
+        isInit = true;
+    }
+
+    if (sockFd == -1) {
+        sockFd = jsproxy_3ds_connect(programOptions.host, programOptions.port);
+
+        // Connection succeeded -- try to send configuration data.
+        if (sockFd >= 0) {
+            if (!encode_and_transmit(sockFd, 0, &config, sizeof(config))) {
+                close(sockFd);
+                sockFd = -1;
+            } else {
+                printf("connected -- gyro!\n");
+            }
+        }
+    } else {
+        if (!jsproxy_3ds_gyro_update(sockFd, &config, rawReport, RAW_REPORT_GYRO_SIZE)) {
+            close(sockFd);
+            sockFd = -1;
+            printf("disconnected -- gyro!\n");
+        }
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -747,32 +933,42 @@ int main(void)
     socInit(socBuffer, SOC_BUFFERSIZE);
 
     // Enable the accel
-    HIDUSER_EnableAccelerometer();
+    if (programOptions.useAccel == true) {
+        HIDUSER_EnableAccelerometer();
+    }
+    if (programOptions.useGyro == true) {
+        HIDUSER_EnableGyroscope();
+    }
 
     while (aptMainLoop()) {
         gspWaitForVBlank();
 
         hidScanInput();
 
+        handle_gamepad();
         handle_touch();
         handle_accel();
+        handle_gyro();
 
         // Poll input multiple times per vblank in order to reduce latency
         // Don't think the touchscreen/accel latency is as big a concern...
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
+            svcSleepThread(1000000000ULL / 180ULL);
+            hidScanInput();
             handle_gamepad();
-
-            if (i != 2) {
-                svcSleepThread(1000000000ULL / 180ULL);
-                hidScanInput();
-            }
         }
 
         gfxFlushBuffers();
         gfxSwapBuffers();
     }
 
-    HIDUSER_DisableAccelerometer();
+    if (programOptions.useGyro == true) {
+        HIDUSER_DisableGyroscope();
+    }
+    if (programOptions.useAccel == true) {
+        HIDUSER_DisableAccelerometer();
+    }
+
     socExit();
     gfxExit();
 
