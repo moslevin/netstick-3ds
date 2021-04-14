@@ -53,7 +53,7 @@ The supported options are described below:
 `use_accel` - Enable the accelerometer when set to 'true'
 `use_gyro` - Enable the gyroscope when set to 'true'
 `send_touch_event` - send a linux "touch" event (in addition to the X/Y coordinates) when the touchscreen is active 
-
+`touch_offset` - shrink the touchscreen's surface by a number of pixels on each side, making it easier to reach its limits
 ## ToDo's:
 
 - Improved documentation / code cleanup

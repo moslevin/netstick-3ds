@@ -177,6 +177,7 @@ typedef struct {
     bool sendTouchEvent;
     bool useAccel;
     bool useGyro;
+    int  touchOffset;
 } program_options_t;
 
 //---------------------------------------------------------------------------
@@ -250,6 +251,8 @@ static void jsproxy_parse_config_line(const char* line_, program_options_t* conf
         } else {
             config_->sendTouchEvent = false;
         }
+    } else if (0 == strcmp(key, "touch_offset")) {
+        config_->touchOffset = atoi(value);
     } else if (0 == strcmp(key, "use_accel")) {
         if (0 == strcmp(value, "true")) {
             config_->useAccel = true;
@@ -514,11 +517,11 @@ static void jsproxy_3ds_config_touch(js_config_t* config_)
     config_->absAxis[0] = LINUX_ABS_X;
     config_->absAxis[1] = LINUX_ABS_Y;
 
-    config_->absAxisMin[0] = 0;
-    config_->absAxisMax[0] = 320;
+    config_->absAxisMin[0] = programOptions.touchOffset;
+    config_->absAxisMax[0] = 320 - programOptions.touchOffset;
 
-    config_->absAxisMin[1] = 0;
-    config_->absAxisMax[1] = 240;
+    config_->absAxisMin[1] = programOptions.touchOffset;
+    config_->absAxisMax[1] = 240 - programOptions.touchOffset;
 }
 
 //---------------------------------------------------------------------------
@@ -733,6 +736,19 @@ static bool jsproxy_3ds_touch_update(int sockFd_, js_config_t* config_, void* re
     touchPosition touch;
     hidTouchRead(&touch);
 
+    // clamp touch events to limits set by border offsets
+    if (touch.px < programOptions.touchOffset) {
+        touch.px = programOptions.touchOffset;
+    } else if (touch.px > (320 - programOptions.touchOffset)) {
+        touch.px = 320 - programOptions.touchOffset;
+    }
+
+    if (touch.py < programOptions.touchOffset) {
+        touch.py = programOptions.touchOffset;
+    } else if (touch.py > (240 - programOptions.touchOffset)) {
+        touch.py = 240 - programOptions.touchOffset;
+    }
+
     // Only send an update if there's a change in the data...
     if ((keys == lastKeys) && (touch.px == lastX) && (touch.py == lastY)) {
         doUpdate = false;
@@ -766,7 +782,7 @@ static bool jsproxy_3ds_touch_update(int sockFd_, js_config_t* config_, void* re
 }
 
 //---------------------------------------------------------------------------
-static void handle_gamepad()
+static bool handle_gamepad()
 {
     static js_index_map_t indexMap = {};
     static js_config_t    config   = {};
@@ -787,24 +803,29 @@ static void handle_gamepad()
             if (!encode_and_transmit(sockFd, 0, &config, sizeof(config))) {
                 close(sockFd);
                 sockFd = -1;
+                return false;
             } else {
                 printf("connected -- gamepad!\n");
             }
+        } else {
+            return false;
         }
     } else {
         if (!jsproxy_3ds_gamepad_update(sockFd, &config, &indexMap, rawReport, RAW_REPORT_SIZE)) {
             close(sockFd);
             sockFd = -1;
             printf("disconnected -- gamepad!\n");
+            return false;
         }
     }
+    return true;
 }
 
 //---------------------------------------------------------------------------
-static void handle_touch()
+static bool handle_touch()
 {
     if (programOptions.useTouch == false) {
-        return;
+        return true;
     }
 
     static uint8_t     rawReport[RAW_REPORT_TOUCH_SIZE];
@@ -825,24 +846,29 @@ static void handle_touch()
             if (!encode_and_transmit(sockFd, 0, &config, sizeof(config))) {
                 close(sockFd);
                 sockFd = -1;
+                return false;
             } else {
                 printf("connected -- touch!\n");
             }
+        } else {
+            return false;
         }
     } else {
         if (!jsproxy_3ds_touch_update(sockFd, &config, rawReport, RAW_REPORT_TOUCH_SIZE)) {
             close(sockFd);
             sockFd = -1;
             printf("disconnected -- touch!\n");
+            return false;
         }
     }
+    return true;
 }
 
 //---------------------------------------------------------------------------
-static void handle_accel()
+static bool handle_accel()
 {
     if (programOptions.useAccel == false) {
-        return;
+        return true;
     }
 
     static uint8_t     rawReport[RAW_REPORT_MOTION_SIZE];
@@ -863,24 +889,29 @@ static void handle_accel()
             if (!encode_and_transmit(sockFd, 0, &config, sizeof(config))) {
                 close(sockFd);
                 sockFd = -1;
+                return false;
             } else {
                 printf("connected -- motion!\n");
             }
+        } else {
+            return false;
         }
     } else {
         if (!jsproxy_3ds_motion_update(sockFd, &config, rawReport, RAW_REPORT_MOTION_SIZE)) {
             close(sockFd);
             sockFd = -1;
             printf("disconnected -- motion!\n");
+            return false;
         }
     }
+    return true;
 }
 
 //---------------------------------------------------------------------------
-static void handle_gyro()
+static bool handle_gyro()
 {
     if (programOptions.useGyro == false) {
-        return;
+        return true;
     }
 
     static uint8_t     rawReport[RAW_REPORT_GYRO_SIZE];
@@ -901,17 +932,22 @@ static void handle_gyro()
             if (!encode_and_transmit(sockFd, 0, &config, sizeof(config))) {
                 close(sockFd);
                 sockFd = -1;
+                return false;
             } else {
                 printf("connected -- gyro!\n");
             }
+        } else {
+            return false;
         }
     } else {
         if (!jsproxy_3ds_gyro_update(sockFd, &config, rawReport, RAW_REPORT_GYRO_SIZE)) {
             close(sockFd);
             sockFd = -1;
             printf("disconnected -- gyro!\n");
+            return false;
         }
     }
+    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -945,17 +981,35 @@ int main(void)
 
         hidScanInput();
 
-        handle_gamepad();
-        handle_touch();
-        handle_accel();
-        handle_gyro();
+        bool rc = true;
 
-        // Poll input multiple times per vblank in order to reduce latency
-        // Don't think the touchscreen/accel latency is as big a concern...
-        for (int i = 0; i < 2; i++) {
-            svcSleepThread(1000000000ULL / 180ULL);
-            hidScanInput();
-            handle_gamepad();
+        rc = handle_gamepad();
+        if (rc) {
+            rc = handle_touch();
+        }
+        if (rc) {
+            rc = handle_accel();
+        }
+        if (rc) {
+            rc = handle_gyro();
+        }
+
+        if (rc) {
+            // Poll input multiple times per vblank in order to reduce latency
+            // Don't think the touchscreen/accel latency is as big a concern...
+            for (int i = 0; i < 2; i++) {
+                svcSleepThread(1000000000ULL / 180ULL);
+                hidScanInput();
+                rc = handle_gamepad();
+                if (!rc) {
+                    break;
+                }
+            }
+        }
+
+        // If we encountered any socket errors, wait a couple seconds before continuing.
+        if (!rc) {
+            svcSleepThread(2000000000ULL);
         }
 
         gfxFlushBuffers();

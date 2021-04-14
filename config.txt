@@ -1,11 +1,12 @@
 server:192.168.0.169
 port:9001
 invert_cstick_x:false
-invert_cstick_y:false
+invert_cstick_y:true
 invert_circle_pad_x:false
-invert_circle_pad_y:false
+invert_circle_pad_y:true
 use_touch:true
 send_touch_event:true
+touch_offset:8
 use_accel:true
 use_gyro:true
 
