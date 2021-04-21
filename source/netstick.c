@@ -517,11 +517,11 @@ static void jsproxy_3ds_config_touch(js_config_t* config_)
     config_->absAxis[0] = LINUX_ABS_X;
     config_->absAxis[1] = LINUX_ABS_Y;
 
-    config_->absAxisMin[0] = programOptions.touchOffset;
-    config_->absAxisMax[0] = 320 - programOptions.touchOffset;
+    config_->absAxisMin[0] = 0;
+    config_->absAxisMax[0] = 320 - (programOptions.touchOffset * 2);
 
-    config_->absAxisMin[1] = programOptions.touchOffset;
-    config_->absAxisMax[1] = 240 - programOptions.touchOffset;
+    config_->absAxisMin[1] = 0;
+    config_->absAxisMax[1] = 240 - (programOptions.touchOffset * 2);
 }
 
 //---------------------------------------------------------------------------
@@ -738,15 +738,19 @@ static bool jsproxy_3ds_touch_update(int sockFd_, js_config_t* config_, void* re
 
     // clamp touch events to limits set by border offsets
     if (touch.px < programOptions.touchOffset) {
-        touch.px = programOptions.touchOffset;
-    } else if (touch.px > (320 - programOptions.touchOffset)) {
-        touch.px = 320 - programOptions.touchOffset;
+        touch.px = 0 ;
+    } else if (touch.px > (320 - (programOptions.touchOffset * 2))) {
+        touch.px = 320 - (programOptions.touchOffset * 2);
+    } else {
+        touch.px -= programOptions.touchOffset;
     }
 
     if (touch.py < programOptions.touchOffset) {
-        touch.py = programOptions.touchOffset;
-    } else if (touch.py > (240 - programOptions.touchOffset)) {
-        touch.py = 240 - programOptions.touchOffset;
+        touch.py = 0;
+    } else if (touch.py > (240 - (programOptions.touchOffset * 2))) {
+        touch.py = 240 - (programOptions.touchOffset * 2);
+    } else {
+        touch.py -= programOptions.touchOffset;
     }
 
     // Only send an update if there's a change in the data...
