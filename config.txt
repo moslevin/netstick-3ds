@@ -9,4 +9,5 @@ send_touch_event:true
 touch_offset:8
 use_accel:true
 use_gyro:true
-
+swap_ab:false
+swap_xy:false

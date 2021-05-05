@@ -1,5 +1,6 @@
-// Netstick - Copyright (c) 2021 Funkenstein Software Consulting.  See LICENSE.txt
+// Netstick-3ds - Copyright (c) 2021 Funkenstein Software Consulting.  See LICENSE.txt
 // for more details.
+
 #pragma once
 
 #include <stdbool.h>
