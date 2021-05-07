@@ -18,7 +18,6 @@ extern "C" {
 
 struct hid_device;
 
-
 //---------------------------------------------------------------------------
 // Callouts invoked to handle initialization + event handling for a HID device
 typedef bool (*hid_config_handler_t)(struct hid_device* device_, const program_options_t* options_);
@@ -29,14 +28,14 @@ typedef bool (*hid_event_handler_t)(struct hid_device* device_, const program_op
 // type of input device supported by the system
 typedef struct hid_device {
     const char* name;
-    bool isInit;
-    int sockFd;
+    bool        isInit;
+    int         sockFd;
     js_config_t config;
-    uint8_t* rawReport;
-    size_t rawReportSize;
+    uint8_t*    rawReport;
+    size_t      rawReportSize;
 
     hid_config_handler_t configHandlerFn;
-    hid_event_handler_t eventHandlerFn;
+    hid_event_handler_t  eventHandlerFn;
 } hid_device_t;
 
 //---------------------------------------------------------------------------
@@ -50,7 +49,11 @@ typedef struct hid_device {
  * @param options_ program options object used in configuring the device
  * @return true on success, false on failure
  */
-bool hid_device_init(hid_device_t* device_, const char* name_, hid_config_handler_t configHandler_, hid_event_handler_t eventHandler_, const program_options_t* options_);
+bool hid_device_init(hid_device_t*            device_,
+                     const char*              name_,
+                     hid_config_handler_t     configHandler_,
+                     hid_event_handler_t      eventHandler_,
+                     const program_options_t* options_);
 
 //---------------------------------------------------------------------------
 /**

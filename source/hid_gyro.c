@@ -43,7 +43,7 @@ static bool hid_gyro_config(hid_device_t* device_, const program_options_t* opti
     }
 
     device_->rawReportSize = RAW_REPORT_GYRO_SIZE;
-    device_->rawReport = (uint8_t*)malloc(device_->rawReportSize);
+    device_->rawReport     = (uint8_t*)malloc(device_->rawReportSize);
 
     return true;
 }
@@ -53,7 +53,7 @@ static bool hid_gyro_event(hid_device_t* device_, const program_options_t* optio
 {
     (void)options_;
 
-    js_report_t report = {};
+    js_report_t  report = {};
     js_config_t* config = &device_->config;
 
     uint8_t* rawReport = device_->rawReport;
@@ -73,6 +73,7 @@ static bool hid_gyro_event(hid_device_t* device_, const program_options_t* optio
 }
 
 //---------------------------------------------------------------------------
-bool hid_gyro_init(hid_device_t* device_, const program_options_t* options_) {
+bool hid_gyro_init(hid_device_t* device_, const program_options_t* options_)
+{
     return hid_device_init(device_, "gyro", hid_gyro_config, hid_gyro_event, options_);
 }

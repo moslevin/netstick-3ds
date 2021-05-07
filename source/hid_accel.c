@@ -22,8 +22,8 @@ static bool hid_accel_config(hid_device_t* device_, const program_options_t* opt
 
     // Set the device identifiers for the 3DS
     js_config_t* config = &device_->config;
-    config->pid = NINTENDO_USB_PID + 2; // Dummy value
-    config->vid = NINTENDO_USB_VID;
+    config->pid         = NINTENDO_USB_PID + 2; // Dummy value
+    config->vid         = NINTENDO_USB_VID;
     strcpy(config->name, NINTENDO_3DS_NAME_MOTION);
 
     config->absAxisCount = 3;
@@ -43,7 +43,7 @@ static bool hid_accel_config(hid_device_t* device_, const program_options_t* opt
     }
 
     device_->rawReportSize = RAW_REPORT_ACCEL_SIZE;
-    device_->rawReport = (uint8_t*)malloc(device_->rawReportSize);
+    device_->rawReport     = (uint8_t*)malloc(device_->rawReportSize);
 
     return true;
 }
@@ -55,11 +55,11 @@ static bool hid_accel_event(hid_device_t* device_, const program_options_t* opti
 
     js_report_t report = {};
 
-    uint8_t* rawReport = device_->rawReport;
-    js_config_t* config = &device_->config;
+    uint8_t*     rawReport = device_->rawReport;
+    js_config_t* config    = &device_->config;
 
-    report.absAxis     = (int32_t*)rawReport;
-    report.relAxis     = (int32_t*)(rawReport + (sizeof(int32_t) * config->absAxisCount));
+    report.absAxis = (int32_t*)rawReport;
+    report.relAxis = (int32_t*)(rawReport + (sizeof(int32_t) * config->absAxisCount));
     report.buttons
         = (uint8_t*)(rawReport + (sizeof(int32_t) * config->absAxisCount) + (sizeof(int32_t) * config->relAxisCount));
 
@@ -74,9 +74,7 @@ static bool hid_accel_event(hid_device_t* device_, const program_options_t* opti
 }
 
 //---------------------------------------------------------------------------
-bool hid_accel_init(hid_device_t* device_, const program_options_t* options_) {
+bool hid_accel_init(hid_device_t* device_, const program_options_t* options_)
+{
     return hid_device_init(device_, "accel", hid_accel_config, hid_accel_event, options_);
 }
-
-
-

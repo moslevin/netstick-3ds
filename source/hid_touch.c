@@ -15,8 +15,8 @@
 #define NINTENDO_3DS_NAME_TOUCH (NINTENDO_3DS_NAME " - Touchscreen")
 
 //---------------------------------------------------------------------------
-#define TOUCHSCREEN_WIDTH   (320)
-#define TOUCHSCREEN_HEIGHT  (240)
+#define TOUCHSCREEN_WIDTH (320)
+#define TOUCHSCREEN_HEIGHT (240)
 
 //---------------------------------------------------------------------------
 #define RAW_REPORT_TOUCH_SIZE (sizeof(uint8_t) + (2 * sizeof(int32_t)))
@@ -51,16 +51,15 @@ static bool hid_touch_config(hid_device_t* device_, const program_options_t* opt
     config->absAxisMax[1] = TOUCHSCREEN_HEIGHT - (options_->touchOffset * 2);
 
     device_->rawReportSize = RAW_REPORT_TOUCH_SIZE;
-    device_->rawReport = (uint8_t*)malloc(device_->rawReportSize);
+    device_->rawReport     = (uint8_t*)malloc(device_->rawReportSize);
 
     return true;
 }
 
-
 //---------------------------------------------------------------------------
 static bool hid_touch_event(hid_device_t* device_, const program_options_t* options_)
 {
-    js_report_t report = {};
+    js_report_t  report = {};
     js_config_t* config = &device_->config;
 
     uint8_t* rawReport = device_->rawReport;
@@ -81,7 +80,7 @@ static bool hid_touch_event(hid_device_t* device_, const program_options_t* opti
 
     // clamp touch events to limits set by border offsets
     if (touch.px < options_->touchOffset) {
-        touch.px = 0 ;
+        touch.px = 0;
     } else if (touch.px > (TOUCHSCREEN_WIDTH - (options_->touchOffset * 2))) {
         touch.px = TOUCHSCREEN_WIDTH - (options_->touchOffset * 2);
     } else {
@@ -129,6 +128,7 @@ static bool hid_touch_event(hid_device_t* device_, const program_options_t* opti
 }
 
 //---------------------------------------------------------------------------
-bool hid_touch_init(hid_device_t* device_, const program_options_t* options_) {
+bool hid_touch_init(hid_device_t* device_, const program_options_t* options_)
+{
     return hid_device_init(device_, "touch", hid_touch_config, hid_touch_event, options_);
 }

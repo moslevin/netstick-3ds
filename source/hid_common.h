@@ -21,6 +21,7 @@
 #define LINUX_ABS_RX 0x03
 #define LINUX_ABS_RY 0x04
 #define LINUX_ABS_RZ 0x05
+#define LINUX_ABS_WHEEL 0x08
 
 #define LINUX_BTN_GAMEPAD 0x130
 #define LINUX_BTN_SOUTH 0x130

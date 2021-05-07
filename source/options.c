@@ -30,7 +30,8 @@ typedef enum {
     PROGRAM_OPTION_USE_ACCEL,
     PROGRAM_OPTION_USE_GYRO,
     PROGRAM_OPTION_TOUCH_OFFSET,
-//--
+    PROGRAM_OPTION_USE_STEERING_WHEEL,
+    //--
     PROGRAM_OPTION_COUNT
 } program_option_t;
 
@@ -39,14 +40,15 @@ typedef bool (*option_handler_fn_t)(const char* value_, void* option_, bool* opt
 
 //---------------------------------------------------------------------------
 typedef struct {
-    const char* optionName;
+    const char*         optionName;
     option_handler_fn_t handler;
-    void* optionVal;
-    bool* optionSet;
+    void*               optionVal;
+    bool*               optionSet;
 } option_handler_map_t;
 
 //---------------------------------------------------------------------------
-static bool opt_handler_bool(const char* value_, void* option_, bool* optionSet_) {
+static bool opt_handler_bool(const char* value_, void* option_, bool* optionSet_)
+{
     bool* boolOption = option_;
 
     if (0 == strcmp("true", value_)) {
@@ -66,7 +68,8 @@ static bool opt_handler_bool(const char* value_, void* option_, bool* optionSet_
 }
 
 //---------------------------------------------------------------------------
-static bool opt_handler_int(const char* value_, void* option_, bool* optionSet_) {
+static bool opt_handler_int(const char* value_, void* option_, bool* optionSet_)
+{
     int* intOption = option_;
 
     *intOption = atoi(value_);
@@ -77,7 +80,8 @@ static bool opt_handler_int(const char* value_, void* option_, bool* optionSet_)
 }
 
 //---------------------------------------------------------------------------
-static bool opt_handler_string(const char* value_, void* option_, bool* optionSet_) {
+static bool opt_handler_string(const char* value_, void* option_, bool* optionSet_)
+{
     char* option = option_;
     strcpy(option, value_);
 
@@ -88,7 +92,8 @@ static bool opt_handler_string(const char* value_, void* option_, bool* optionSe
 }
 
 //---------------------------------------------------------------------------
-void program_options_init(program_options_t* options_) {
+void program_options_init(program_options_t* options_)
+{
     memset(options_, 0, sizeof(*options_));
 }
 
@@ -116,21 +121,27 @@ static void program_option_parse_config_line(const char* line_, option_handler_m
 }
 
 //---------------------------------------------------------------------------
-bool program_options_load(program_options_t* options_, const char* filePath_) {
+bool program_options_load(program_options_t* options_, const char* filePath_)
+{
     option_handler_map_t handlerMap[PROGRAM_OPTION_COUNT] = {
-        [PROGRAM_OPTION_HOST] = {"server", opt_handler_string, &options_->host, &options_->hostFound},
-        [PROGRAM_OPTION_PORT] = {"port", opt_handler_int, &options_->port, &options_->portFound},
-        [PROGRAM_OPTION_SWAP_AB] = {"swap_ab", opt_handler_bool, &options_->swapAB, NULL},
-        [PROGRAM_OPTION_SWAP_XY] = {"swap_xy", opt_handler_bool, &options_->swapXY, NULL},
-        [PROGRAM_OPTION_INVERT_CSTICK_X] = {"invert_cstick_x", opt_handler_bool, &options_->invertCStickX, NULL},
-        [PROGRAM_OPTION_INVERT_CSTICK_Y] = {"invert_cstick_y", opt_handler_bool, &options_->invertCStickY, NULL},
-        [PROGRAM_OPTION_INVERT_CIRCLE_PAD_X] = {"invert_circle_pad_x", opt_handler_bool, &options_->invertCirclePadX, NULL},
-        [PROGRAM_OPTION_INVERT_CIRCLE_PAD_Y] = {"invert_circle_pad_y", opt_handler_bool, &options_->invertCirclePadY, NULL},
-        [PROGRAM_OPTION_USE_TOUCH] = {"use_touch", opt_handler_bool, &options_->useTouch, NULL},
-        [PROGRAM_OPTION_SEND_TOUCH_DOWN_EVENT] = {"send_touch_event", opt_handler_bool, &options_->sendTouchDownEvent, NULL},
-        [PROGRAM_OPTION_USE_ACCEL] = {"use_accel", opt_handler_bool, &options_->useAccel, NULL},
-        [PROGRAM_OPTION_USE_GYRO] = {"use_gyro", opt_handler_bool, &options_->useGyro, NULL},
-        [PROGRAM_OPTION_TOUCH_OFFSET] = {"touch_offset", opt_handler_int, &options_->touchOffset, NULL},
+        [PROGRAM_OPTION_HOST]            = { "server", opt_handler_string, &options_->host, &options_->hostFound },
+        [PROGRAM_OPTION_PORT]            = { "port", opt_handler_int, &options_->port, &options_->portFound },
+        [PROGRAM_OPTION_SWAP_AB]         = { "swap_ab", opt_handler_bool, &options_->swapAB, NULL },
+        [PROGRAM_OPTION_SWAP_XY]         = { "swap_xy", opt_handler_bool, &options_->swapXY, NULL },
+        [PROGRAM_OPTION_INVERT_CSTICK_X] = { "invert_cstick_x", opt_handler_bool, &options_->invertCStickX, NULL },
+        [PROGRAM_OPTION_INVERT_CSTICK_Y] = { "invert_cstick_y", opt_handler_bool, &options_->invertCStickY, NULL },
+        [PROGRAM_OPTION_INVERT_CIRCLE_PAD_X]
+        = { "invert_circle_pad_x", opt_handler_bool, &options_->invertCirclePadX, NULL },
+        [PROGRAM_OPTION_INVERT_CIRCLE_PAD_Y]
+        = { "invert_circle_pad_y", opt_handler_bool, &options_->invertCirclePadY, NULL },
+        [PROGRAM_OPTION_USE_TOUCH] = { "use_touch", opt_handler_bool, &options_->useTouch, NULL },
+        [PROGRAM_OPTION_SEND_TOUCH_DOWN_EVENT]
+        = { "send_touch_event", opt_handler_bool, &options_->sendTouchDownEvent, NULL },
+        [PROGRAM_OPTION_USE_ACCEL]    = { "use_accel", opt_handler_bool, &options_->useAccel, NULL },
+        [PROGRAM_OPTION_USE_GYRO]     = { "use_gyro", opt_handler_bool, &options_->useGyro, NULL },
+        [PROGRAM_OPTION_TOUCH_OFFSET] = { "touch_offset", opt_handler_int, &options_->touchOffset, NULL },
+        [PROGRAM_OPTION_USE_STEERING_WHEEL]
+        = { "use_steering_controls", opt_handler_bool, &options_->useSteeringControls, NULL },
     };
 
     // Open file and read contents into a buffer...
@@ -193,4 +204,3 @@ bool program_options_load(program_options_t* options_, const char* filePath_) {
 
     return true;
 }
-

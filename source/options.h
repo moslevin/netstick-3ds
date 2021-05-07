@@ -13,21 +13,23 @@ extern "C" {
 
 //---------------------------------------------------------------------------
 typedef struct {
-    char host[64];              //!< Hostname (IP) of the device to connect to
-    bool hostFound;             //!< Hostname was found in the config file
-    int  port;                  //!< Port of the device to connect to
-    bool portFound;             //!< Port was found in the config file
-    bool swapAB;                //!< Swap A/B buttons on the gamepad
-    bool swapXY;                //!< Swap X/Y buttons on the gamepad
-    bool invertCStickX;         //!< Invert the X axis on the CStick
-    bool invertCStickY;         //!< Invert the Y axis on the CStick
-    bool invertCirclePadX;      //!< Invert the X axis on the circlepad
-    bool invertCirclePadY;      //!< Invert the Y axis on the circlepad
-    bool useTouch;              //!< Send touchpad events on its own socket
-    bool sendTouchDownEvent;    //!< Sena a touch-down event with every press (and release when touch removed)
-    bool useAccel;              //!< Send accelerometer events on its own socket
-    bool useGyro;               //!< Send gyro events on its own socket
-    int  touchOffset;           //!< Set the offset from the edges of the screen that are ignored for touch events (reduce active area to make it easier to reach corners)
+    char host[64];           //!< Hostname (IP) of the device to connect to
+    bool hostFound;          //!< Hostname was found in the config file
+    int  port;               //!< Port of the device to connect to
+    bool portFound;          //!< Port was found in the config file
+    bool swapAB;             //!< Swap A/B buttons on the gamepad
+    bool swapXY;             //!< Swap X/Y buttons on the gamepad
+    bool invertCStickX;      //!< Invert the X axis on the CStick
+    bool invertCStickY;      //!< Invert the Y axis on the CStick
+    bool invertCirclePadX;   //!< Invert the X axis on the circlepad
+    bool invertCirclePadY;   //!< Invert the Y axis on the circlepad
+    bool useTouch;           //!< Send touchpad events on its own socket
+    bool sendTouchDownEvent; //!< Sena a touch-down event with every press (and release when touch removed)
+    bool useAccel;           //!< Send accelerometer events on its own socket
+    bool useGyro;            //!< Send gyro events on its own socket
+    int  touchOffset; //!< Set the offset from the edges of the screen that are ignored for touch events (reduce active
+                      //!< area to make it easier to reach corners)
+    bool useSteeringControls; //!< Send motion-based steering-wheel controls with the gamepad device
 } program_options_t;
 
 //---------------------------------------------------------------------------

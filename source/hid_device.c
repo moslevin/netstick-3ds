@@ -15,12 +15,17 @@
 #include "net_util.h"
 
 //---------------------------------------------------------------------------
-bool hid_device_init(hid_device_t* device_, const char* name_, hid_config_handler_t configHandler_, hid_event_handler_t eventHandler_, const program_options_t* options_) {
+bool hid_device_init(hid_device_t*            device_,
+                     const char*              name_,
+                     hid_config_handler_t     configHandler_,
+                     hid_event_handler_t      eventHandler_,
+                     const program_options_t* options_)
+{
     memset(device_, 0, sizeof(*device_));
-    device_->name = name_;
+    device_->name            = name_;
     device_->configHandlerFn = configHandler_;
-    device_->eventHandlerFn = eventHandler_;
-    device_->sockFd = -1;
+    device_->eventHandlerFn  = eventHandler_;
+    device_->sockFd          = -1;
 
     if (device_->configHandlerFn(device_, options_)) {
         device_->isInit = true;

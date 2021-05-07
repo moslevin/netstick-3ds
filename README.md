@@ -56,4 +56,4 @@ The supported options are described below:
 `touch_offset` - shrink the touchscreen's surface by a number of pixels on each side, making it easier to reach its limits
 `swap_ab` - swap the a and b buttons in the joystick report (allows correct button mapping when using a 3DS as a controller for steam, etc.)
 `swap_xy` - swap the x and y buttons in the joystick report (allows correct button mapping when using a 3DS as a controller for steam, etc.)
-
+`use_steering_controls` - send a virtual steering-wheel axis in the gamepad report, derived from the X/Z accelerometer values

@@ -78,7 +78,8 @@ static bool init_config()
 }
 
 //---------------------------------------------------------------------------
-static void init_hid_devices() {
+static void init_hid_devices()
+{
     hid_gamepad_init(&hidGamepad, &programOptions);
 
     if (programOptions.useAccel) {
@@ -115,10 +116,10 @@ int main(void)
     socInit(socBuffer, SOC_BUFFERSIZE);
 
     // Enable the accel
-    if (programOptions.useAccel == true) {
+    if (programOptions.useAccel || programOptions.useSteeringControls) {
         HIDUSER_EnableAccelerometer();
     }
-    if (programOptions.useGyro == true) {
+    if (programOptions.useGyro) {
         HIDUSER_EnableGyroscope();
     }
 
@@ -129,16 +130,15 @@ int main(void)
 
         bool rc = true;
 
-
         rc = handle_hid_events(&hidGamepad, &programOptions);
         if (rc && programOptions.useTouch) {
             rc = handle_hid_events(&hidTouchscreen, &programOptions);
         }
         if (rc && programOptions.useAccel) {
-            rc =handle_hid_events(&hidAccel, &programOptions);
+            rc = handle_hid_events(&hidAccel, &programOptions);
         }
-        if (rc && programOptions.useGyro) {
-        }    rc =handle_hid_events(&hidGyro, &programOptions);
+        if (rc && programOptions.useGyro) { }
+        rc = handle_hid_events(&hidGyro, &programOptions);
 
         if (rc) {
             // Poll input multiple times per vblank in order to reduce latency
@@ -162,10 +162,10 @@ int main(void)
         gfxSwapBuffers();
     }
 
-    if (programOptions.useGyro == true) {
+    if (programOptions.useGyro) {
         HIDUSER_DisableGyroscope();
     }
-    if (programOptions.useAccel == true) {
+    if (programOptions.useAccel || programOptions.useSteeringControls) {
         HIDUSER_DisableAccelerometer();
     }
 
