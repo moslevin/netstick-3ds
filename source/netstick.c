@@ -137,8 +137,9 @@ int main(void)
         if (rc && programOptions.useAccel) {
             rc = handle_hid_events(&hidAccel, &programOptions);
         }
-        if (rc && programOptions.useGyro) { }
-        rc = handle_hid_events(&hidGyro, &programOptions);
+        if (rc && programOptions.useGyro) {
+            rc = handle_hid_events(&hidGyro, &programOptions);
+        }
 
         if (rc) {
             // Poll input multiple times per vblank in order to reduce latency
